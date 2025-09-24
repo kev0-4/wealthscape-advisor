@@ -20,27 +20,29 @@ export default function Portfolio() {
     goal: '',
     time_horizon_years: '',
     risk_appetite: '',
-    ticker: ''
+    tickers: [] as string[]
   });
   const [recommendation, setRecommendation] = useState<PortfolioRecommendation | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleGetRecommendation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userProfile.ticker.trim() || !authState.user?.email || !authState.user?.token) return;
+    if (!userProfile.tickers.length || !authState.user?.email || !authState.user?.token) return;
 
     try {
       setLoading(true);
+      // Use the first selected ticker for the API call
+      const primaryTicker = userProfile.tickers[0];
       const response = await advisorAPI.getPortfolioRecommendation(
         authState.user.email,
-        userProfile.ticker.toUpperCase(),
+        primaryTicker.toUpperCase(),
         authState.user.token
       );
       
       setRecommendation(response.data);
       toast({
         title: "Portfolio recommendation generated!",
-        description: `Analysis complete for ${userProfile.ticker.toUpperCase()}`,
+        description: `Analysis complete for ${userProfile.tickers.join(', ')}`,
         variant: "default",
       });
     } catch (error: any) {
@@ -149,10 +151,14 @@ export default function Portfolio() {
               </div>
               
               <div>
-                <Label htmlFor="ticker">Stock Symbol</Label>
-                <Select value={userProfile.ticker} onValueChange={(value) => setUserProfile({...userProfile, ticker: value})}>
+                <Label htmlFor="tickers">Stock Symbols</Label>
+                <Select value="" onValueChange={(value) => {
+                  if (value && !userProfile.tickers.includes(value)) {
+                    setUserProfile({...userProfile, tickers: [...userProfile.tickers, value]});
+                  }
+                }}>
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select a stock symbol" />
+                    <SelectValue placeholder="Select stock symbols" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="AAPL">AAPL - Apple Inc.</SelectItem>
@@ -169,6 +175,27 @@ export default function Portfolio() {
                     <SelectItem value="IBM">IBM - International Business Machines</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                {/* Selected tickers display */}
+                {userProfile.tickers.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {userProfile.tickers.map((ticker) => (
+                      <Badge key={ticker} variant="secondary" className="flex items-center gap-1">
+                        {ticker}
+                        <button
+                          type="button"
+                          onClick={() => setUserProfile({
+                            ...userProfile, 
+                            tickers: userProfile.tickers.filter(t => t !== ticker)
+                          })}
+                          className="ml-1 hover:bg-muted-foreground/20 rounded-full p-0.5"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             
@@ -176,7 +203,7 @@ export default function Portfolio() {
               <Button 
                 type="submit" 
                 className="btn-gradient" 
-                disabled={loading || !userProfile.ticker.trim() || !userProfile.income || !userProfile.investment_amount || !userProfile.goal || !userProfile.time_horizon_years || !userProfile.risk_appetite}
+                disabled={loading || !userProfile.tickers.length || !userProfile.income || !userProfile.investment_amount || !userProfile.goal || !userProfile.time_horizon_years || !userProfile.risk_appetite}
               >
                 {loading ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>
