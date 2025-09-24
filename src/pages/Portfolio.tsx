@@ -80,17 +80,16 @@ export default function Portfolio() {
           <form onSubmit={handleGetRecommendation} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="income">Income Level</Label>
-                <Select value={userProfile.income} onValueChange={(value) => setUserProfile({...userProfile, income: value})}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select income level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="income">Annual Income (₹)</Label>
+                <Input
+                  id="income"
+                  type="number"
+                  placeholder="e.g., 1200000"
+                  value={userProfile.income}
+                  onChange={(e) => setUserProfile({...userProfile, income: e.target.value})}
+                  className="mt-1"
+                  required
+                />
               </div>
               
               <div>
