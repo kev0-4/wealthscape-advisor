@@ -149,16 +149,26 @@ export default function Portfolio() {
               </div>
               
               <div>
-                <Label htmlFor="ticker">Stock Ticker</Label>
-                <Input
-                  id="ticker"
-                  type="text"
-                  placeholder="e.g., AAPL, MSFT, GOOGL"
-                  value={userProfile.ticker}
-                  onChange={(e) => setUserProfile({...userProfile, ticker: e.target.value})}
-                  className="mt-1"
-                  required
-                />
+                <Label htmlFor="ticker">Stock Symbol</Label>
+                <Select value={userProfile.ticker} onValueChange={(value) => setUserProfile({...userProfile, ticker: value})}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select a stock symbol" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AAPL">AAPL - Apple Inc.</SelectItem>
+                    <SelectItem value="MSFT">MSFT - Microsoft Corporation</SelectItem>
+                    <SelectItem value="GOOGL">GOOGL - Alphabet Inc.</SelectItem>
+                    <SelectItem value="AMZN">AMZN - Amazon.com Inc.</SelectItem>
+                    <SelectItem value="TSLA">TSLA - Tesla Inc.</SelectItem>
+                    <SelectItem value="NVDA">NVDA - NVIDIA Corporation</SelectItem>
+                    <SelectItem value="META">META - Meta Platforms Inc.</SelectItem>
+                    <SelectItem value="NFLX">NFLX - Netflix Inc.</SelectItem>
+                    <SelectItem value="ADBE">ADBE - Adobe Inc.</SelectItem>
+                    <SelectItem value="CRM">CRM - Salesforce Inc.</SelectItem>
+                    <SelectItem value="ORCL">ORCL - Oracle Corporation</SelectItem>
+                    <SelectItem value="IBM">IBM - International Business Machines</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             
