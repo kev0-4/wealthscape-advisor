@@ -8,31 +8,39 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Target, TrendingUp, PieChart, Lightbulb } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function Portfolio() {
   const { state: authState } = useAuth();
-  const [ticker, setTicker] = useState('');
+  const [userProfile, setUserProfile] = useState({
+    income: '',
+    investment_amount: '',
+    goal: '',
+    time_horizon_years: '',
+    risk_appetite: '',
+    ticker: ''
+  });
   const [recommendation, setRecommendation] = useState<PortfolioRecommendation | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleGetRecommendation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ticker.trim() || !authState.user?.email || !authState.user?.token) return;
+    if (!userProfile.ticker.trim() || !authState.user?.email || !authState.user?.token) return;
 
     try {
       setLoading(true);
       const response = await advisorAPI.getPortfolioRecommendation(
         authState.user.email,
-        ticker.toUpperCase(),
+        userProfile.ticker.toUpperCase(),
         authState.user.token
       );
       
       setRecommendation(response.data);
       toast({
         title: "Portfolio recommendation generated!",
-        description: `Analysis complete for ${ticker.toUpperCase()}`,
+        description: `Analysis complete for ${userProfile.ticker.toUpperCase()}`,
         variant: "default",
       });
     } catch (error: any) {
@@ -69,24 +77,97 @@ export default function Portfolio() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleGetRecommendation} className="flex space-x-4">
-            <div className="flex-1">
-              <Label htmlFor="ticker">Stock Ticker</Label>
-              <Input
-                id="ticker"
-                type="text"
-                placeholder="e.g., AAPL, MSFT, GOOGL"
-                value={ticker}
-                onChange={(e) => setTicker(e.target.value)}
-                className="mt-1"
-                required
-              />
+          <form onSubmit={handleGetRecommendation} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="income">Income Level</Label>
+                <Select value={userProfile.income} onValueChange={(value) => setUserProfile({...userProfile, income: value})}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select income level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="investment_amount">Investment Amount (₹)</Label>
+                <Input
+                  id="investment_amount"
+                  type="number"
+                  placeholder="e.g., 100000"
+                  value={userProfile.investment_amount}
+                  onChange={(e) => setUserProfile({...userProfile, investment_amount: e.target.value})}
+                  className="mt-1"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="goal">Financial Goal</Label>
+                <Select value={userProfile.goal} onValueChange={(value) => setUserProfile({...userProfile, goal: value})}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select your goal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Retirement">Retirement</SelectItem>
+                    <SelectItem value="Education">Education</SelectItem>
+                    <SelectItem value="Home Purchase">Home Purchase</SelectItem>
+                    <SelectItem value="Wealth Building">Wealth Building</SelectItem>
+                    <SelectItem value="Emergency Fund">Emergency Fund</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="time_horizon_years">Time Horizon (Years)</Label>
+                <Input
+                  id="time_horizon_years"
+                  type="number"
+                  placeholder="e.g., 10"
+                  value={userProfile.time_horizon_years}
+                  onChange={(e) => setUserProfile({...userProfile, time_horizon_years: e.target.value})}
+                  className="mt-1"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="risk_appetite">Risk Appetite</Label>
+                <Select value={userProfile.risk_appetite} onValueChange={(value) => setUserProfile({...userProfile, risk_appetite: value})}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select risk level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="ticker">Stock Ticker</Label>
+                <Input
+                  id="ticker"
+                  type="text"
+                  placeholder="e.g., AAPL, MSFT, GOOGL"
+                  value={userProfile.ticker}
+                  onChange={(e) => setUserProfile({...userProfile, ticker: e.target.value})}
+                  className="mt-1"
+                  required
+                />
+              </div>
             </div>
-            <div className="flex items-end">
+            
+            <div className="flex justify-end">
               <Button 
                 type="submit" 
                 className="btn-gradient" 
-                disabled={loading || !ticker.trim()}
+                disabled={loading || !userProfile.ticker.trim() || !userProfile.income || !userProfile.investment_amount || !userProfile.goal || !userProfile.time_horizon_years || !userProfile.risk_appetite}
               >
                 {loading ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>
