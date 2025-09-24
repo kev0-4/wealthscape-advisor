@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { advisorAPI, type PortfolioRecommendation } from '@/lib/api';
+import { advisorAPI, type PortfolioRecommendation, type PortfolioRecommendationRequest } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,11 +31,18 @@ export default function Portfolio() {
 
     try {
       setLoading(true);
-      // Use the first selected ticker for the API call
-      const primaryTicker = userProfile.tickers[0];
+      // Send all user profile data to the backend
+      const portfolioRequest = {
+        email: authState.user.email,
+        income: userProfile.income,
+        investment_amount: userProfile.investment_amount,
+        goal: userProfile.goal,
+        time_horizon_years: userProfile.time_horizon_years,
+        risk_appetite: userProfile.risk_appetite,
+        tickers: userProfile.tickers.map(ticker => ticker.toUpperCase())
+      };
       const response = await advisorAPI.getPortfolioRecommendation(
-        authState.user.email,
-        primaryTicker.toUpperCase(),
+        portfolioRequest,
         authState.user.token
       );
       

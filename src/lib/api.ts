@@ -177,9 +177,19 @@ export const dataAPI = {
     api.get<MarketData>(`/agent/process/${ticker}`),
 };
 
+export interface PortfolioRecommendationRequest {
+  email: string;
+  income: string;
+  investment_amount: string;
+  goal: string;
+  time_horizon_years: string;
+  risk_appetite: string;
+  tickers: string[];
+}
+
 export const advisorAPI = {
-  getPortfolioRecommendation: (email: string, ticker: string, token: string) => 
-    api.get<PortfolioRecommendation>(`/advisor/portfolio?email=${email}&ticker=${ticker}`, {
+  getPortfolioRecommendation: (data: PortfolioRecommendationRequest, token: string) => 
+    api.post<PortfolioRecommendation>('/advisor/portfolio', data, {
       headers: { Authorization: `Bearer ${token}` }
     }),
 };
