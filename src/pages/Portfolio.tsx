@@ -180,6 +180,7 @@ export default function Portfolio() {
                     <SelectItem value="CRM">CRM - Salesforce Inc.</SelectItem>
                     <SelectItem value="ORCL">ORCL - Oracle Corporation</SelectItem>
                     <SelectItem value="IBM">IBM - International Business Machines</SelectItem>
+                    <SelectItem value="TSM">TSM - Taiwan Semiconductor Manufacturing Company</SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -245,7 +246,7 @@ export default function Portfolio() {
                 </div>
                 <div>
                   <p className="font-medium text-muted-foreground">Investment Amount</p>
-                  <p className="font-medium">₹{recommendation.user_profile.investment_amount.toLocaleString()}</p>
+                  <p className="font-medium">${recommendation.user_profile.investment_amount.toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="font-medium text-muted-foreground">Goal</p>
@@ -291,7 +292,7 @@ export default function Portfolio() {
                         <span className="font-medium">{allocation.percentage.toFixed(1)}%</span>
                       </div>
                       <span className="text-sm font-medium">
-                        ₹{allocation.amount_in_inr.toLocaleString()}
+                        ${allocation.amount_in_inr.toLocaleString()}
                       </span>
                     </div>
                     <Progress value={allocation.percentage} className="h-2" />
@@ -363,7 +364,7 @@ export default function Portfolio() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Price</p>
-                      <p className="font-medium">₹{data.last_price.toFixed(2)}</p>
+                      <p className="font-medium">${data.last_price.toFixed(2)}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Weight</p>
