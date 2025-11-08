@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { userAPI, type UserProfile, type FinancialGoal, type Investment, type InvestmentPreference } from '@/lib/api';
+import { mockUserProfile, mockGoals, mockInvestments, mockPreferences } from '@/lib/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -19,6 +20,20 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchUserData() {
       if (!authState.user?.email || !authState.user?.token) return;
+
+      // Use mock data for demo mode
+      if (authState.user.isDemo) {
+        setLoading(true);
+        // Simulate API delay
+        setTimeout(() => {
+          setProfile(mockUserProfile);
+          setGoals(mockGoals);
+          setInvestments(mockInvestments);
+          setPreferences(mockPreferences);
+          setLoading(false);
+        }, 500);
+        return;
+      }
 
       try {
         setLoading(true);
@@ -65,12 +80,21 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground">
-          Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}!
-        </h1>
-        <p className="text-muted-foreground">
-          Here's your investment portfolio overview and recent activity.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">
+              Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}!
+            </h1>
+            <p className="text-muted-foreground">
+              Here's your investment portfolio overview and recent activity.
+            </p>
+          </div>
+          {authState.user?.isDemo && (
+            <Badge variant="secondary" className="ml-4">
+              Demo Mode
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Portfolio Overview */}

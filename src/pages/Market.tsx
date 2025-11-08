@@ -1,18 +1,25 @@
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { dataAPI, type MarketData } from '@/lib/api';
+import { getMockMarketData } from '@/lib/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, BarChart3, Building2, Users, Newspaper, TrendingUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Loader2, BarChart3, Building2, Users, Newspaper, TrendingUp, BookOpen, ChevronDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function Market() {
+  const { state: authState } = useAuth();
   const [ticker, setTicker] = useState('');
   const [marketData, setMarketData] = useState<MarketData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [eli5Explanation, setEli5Explanation] = useState<string | null>(null);
+  const [eli5Loading, setEli5Loading] = useState(false);
+  const [eli5Open, setEli5Open] = useState(false);
 
   const handleGetMarketData = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,9 +27,102 @@ export default function Market() {
 
     try {
       setLoading(true);
+      setEli5Explanation(null);
+      setEli5Open(false);
+      
+      // Use mock data in demo mode
+      if (authState.user?.isDemo) {
+        const mockData = getMockMarketData(ticker.toUpperCase());
+        if (mockData) {
+          setTimeout(() => {
+            setMarketData(mockData);
+            setLoading(false);
+            
+            // Generate ELI5 for demo data
+            setEli5Loading(true);
+            const contentToExplain = `
+Company: ${mockData.company_name} (${mockData.target_ticker})
+Industry: ${mockData.industry}
+Current Stock Price: ₹${mockData.stock_data[mockData.target_ticker]?.price.toFixed(2)}
+Volume: ${(mockData.stock_data[mockData.target_ticker]?.volume / 1000000).toFixed(1)}M shares
+Sector: ${mockData.stock_data[mockData.target_ticker]?.sector}
+Competitors: ${mockData.competitors.join(', ')}
+Suppliers: ${mockData.suppliers.join(', ')}
+
+Key Terms:
+- Stock Price: The current cost to buy one share of the company
+- Volume: How many shares were traded in a day
+- Sector: The industry category the company belongs to
+- Competitors: Other companies that sell similar products or services
+- Suppliers: Companies that provide materials or services to this company
+- Ticker Symbol: The short code used to identify a stock (like AAPL for Apple)
+- Market Data: Information about how the stock is performing
+`;
+            dataAPI.getELI5Explanation(
+              contentToExplain,
+              'Market data including stock price, volume, competitors, suppliers, and company information'
+            ).then(response => {
+              setEli5Explanation(response.data.explanation);
+              setEli5Loading(false);
+            }).catch(() => {
+              setEli5Loading(false);
+            });
+            
+            toast({
+              title: "Market data retrieved!",
+              description: `Demo analysis complete for ${mockData.company_name}`,
+              variant: "default",
+            });
+          }, 800);
+        } else {
+          setTimeout(() => {
+            setLoading(false);
+            toast({
+              title: "Demo data available",
+              description: "Try AAPL, MSFT, or GOOGL for demo market data.",
+              variant: "default",
+            });
+          }, 800);
+        }
+        return;
+      }
+      
       const response = await dataAPI.getMarketData(ticker.toUpperCase());
       
       setMarketData(response.data);
+      
+      // Generate ELI5 explanation
+      setEli5Loading(true);
+      try {
+        const contentToExplain = `
+Company: ${response.data.company_name} (${response.data.target_ticker})
+Industry: ${response.data.industry}
+Current Stock Price: ₹${response.data.stock_data[response.data.target_ticker]?.price.toFixed(2)}
+Volume: ${(response.data.stock_data[response.data.target_ticker]?.volume / 1000000).toFixed(1)}M shares
+Sector: ${response.data.stock_data[response.data.target_ticker]?.sector}
+Competitors: ${response.data.competitors.join(', ')}
+Suppliers: ${response.data.suppliers.join(', ')}
+
+Key Terms:
+- Stock Price: The current cost to buy one share of the company
+- Volume: How many shares were traded in a day
+- Sector: The industry category the company belongs to
+- Competitors: Other companies that sell similar products or services
+- Suppliers: Companies that provide materials or services to this company
+- Ticker Symbol: The short code used to identify a stock (like AAPL for Apple)
+- Market Data: Information about how the stock is performing
+`;
+        const eli5Response = await dataAPI.getELI5Explanation(
+          contentToExplain,
+          'Market data including stock price, volume, competitors, suppliers, and company information'
+        );
+        setEli5Explanation(eli5Response.data.explanation);
+      } catch (error) {
+        console.error('Failed to generate ELI5 explanation:', error);
+      } finally {
+        setEli5Loading(false);
+      }
+      
       toast({
         title: "Market data retrieved!",
         description: `Analysis complete for ${response.data.company_name}`,
@@ -43,11 +143,18 @@ export default function Market() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Market Data</h1>
-        <p className="text-muted-foreground">
-          Comprehensive market intelligence including company analysis, competitor data, and recent news.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Market Data</h1>
+          <p className="text-muted-foreground">
+            Comprehensive market intelligence including company analysis, competitor data, and recent news.
+          </p>
+        </div>
+        {authState.user?.isDemo && (
+          <Badge variant="secondary">
+            Demo Mode
+          </Badge>
+        )}
       </div>
 
       {/* Input Form */}
@@ -125,7 +232,8 @@ export default function Market() {
                 <div>
                   <p className="font-medium text-muted-foreground">Current Price</p>
                   <p className="text-lg font-bold text-primary">
-                    ₹{marketData.stock_data[marketData.target_ticker]?.price.toFixed(2) || 'N/A'}
+                    {marketData.stock_data[marketData.target_ticker]?.currency === 'USD' ? '$' : '₹'}
+                    {marketData.stock_data[marketData.target_ticker]?.price.toFixed(2) || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -160,7 +268,9 @@ export default function Market() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Price</p>
-                      <p className="font-bold text-lg">₹{data.price.toFixed(2)}</p>
+                      <p className="font-bold text-lg">
+                        {data.currency === 'USD' ? '$' : '₹'}{data.price.toFixed(2)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Volume</p>
@@ -340,6 +450,42 @@ export default function Market() {
                 </>
               )}
             </CardContent>
+          </Card>
+
+          {/* ELI5 Section */}
+          <Card className="card-elegant border-primary/20">
+            <Collapsible open={eli5Open} onOpenChange={setEli5Open}>
+              <CardHeader>
+                <CollapsibleTrigger className="flex items-center justify-between w-full text-left">
+                  <div className="flex items-center space-x-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    <CardTitle>Explain Like I'm 5 (ELI5)</CardTitle>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${eli5Open ? 'transform rotate-180' : ''}`} />
+                </CollapsibleTrigger>
+                <CardDescription>
+                  Simple explanations of market data and financial terms - no jargon, just plain English
+                </CardDescription>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent>
+                  {eli5Loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+                      <span className="text-muted-foreground">Generating simple explanation...</span>
+                    </div>
+                  ) : eli5Explanation ? (
+                    <div className="prose prose-sm max-w-none">
+                      <p className="text-sm leading-relaxed whitespace-pre-line">{eli5Explanation}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Click to generate a simple explanation of the market data and financial terms shown above.
+                    </p>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
         </div>
       )}

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,12 +9,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, TrendingUp } from 'lucide-react';
 
 export default function Auth() {
-  const { state, login, signup, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const { state, login, signup, demoLogin, isAuthenticated, needsOnboarding } = useAuth();
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ email: '', password: '' });
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (needsOnboarding()) {
+        navigate('/onboarding', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, needsOnboarding, navigate]);
+
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return null; // Will redirect via useEffect
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -25,6 +36,10 @@ export default function Auth() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     await signup(signupForm);
+  };
+
+  const handleDemoLogin = () => {
+    demoLogin();
   };
 
   return (
@@ -140,6 +155,29 @@ export default function Auth() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Demo Button */}
+        <div className="space-y-4">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or try demo
+              </span>
+            </div>
+          </div>
+          
+          <Button 
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleDemoLogin}
+          >
+            Explore with Demo Data
+          </Button>
+        </div>
 
         {/* Demo Notice */}
         <div className="text-center text-sm text-muted-foreground">

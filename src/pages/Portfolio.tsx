@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { advisorAPI, type PortfolioRecommendation, type PortfolioRecommendationRequest } from '@/lib/api';
+import { mockPortfolioRecommendation } from '@/lib/mockData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Target, TrendingUp, PieChart, Lightbulb } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Loader2, Target, TrendingUp, PieChart, Lightbulb, BookOpen, ChevronDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 export default function Portfolio() {
@@ -24,6 +26,9 @@ export default function Portfolio() {
   });
   const [recommendation, setRecommendation] = useState<PortfolioRecommendation | null>(null);
   const [loading, setLoading] = useState(false);
+  const [eli5Explanation, setEli5Explanation] = useState<string | null>(null);
+  const [eli5Loading, setEli5Loading] = useState(false);
+  const [eli5Open, setEli5Open] = useState(false);
 
   const handleGetRecommendation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +36,52 @@ export default function Portfolio() {
 
     try {
       setLoading(true);
+      setEli5Explanation(null);
+      setEli5Open(false);
+      
+      // Use mock data in demo mode
+      if (authState.user.isDemo) {
+        setTimeout(() => {
+          setRecommendation(mockPortfolioRecommendation);
+          setLoading(false);
+          
+          // Generate ELI5 for demo data
+          setEli5Loading(true);
+          const contentToExplain = `
+Portfolio Allocation: ${mockPortfolioRecommendation.portfolio_allocation.map(a => `${a.asset_class} (${a.percentage}%)`).join(', ')}
+Expected Return Range: ${mockPortfolioRecommendation.expected_return_range[0]}% to ${mockPortfolioRecommendation.expected_return_range[1]}%
+Risk Appetite: ${mockPortfolioRecommendation.user_profile.risk_appetite}
+Time Horizon: ${mockPortfolioRecommendation.user_profile.time_horizon_years} years
+Financial Goal: ${mockPortfolioRecommendation.user_profile.goal}
+
+Key Terms:
+- Portfolio Allocation: How your money is divided across different types of investments
+- Asset Class: Different categories of investments (stocks, bonds, etc.)
+- Expected Return: How much money you might make over time
+- Risk Appetite: How comfortable you are with the possibility of losing money
+- Time Horizon: How long you plan to invest
+- Sentiment Score: How positive or negative the market feels about a stock
+- Market Position: How strong a company is compared to its competitors
+`;
+          advisorAPI.getELI5Explanation(
+            contentToExplain,
+            'Portfolio recommendation with allocation strategy, expected returns, and risk analysis'
+          ).then(response => {
+            setEli5Explanation(response.data.explanation);
+            setEli5Loading(false);
+          }).catch(() => {
+            setEli5Loading(false);
+          });
+          
+          toast({
+            title: "Portfolio recommendation generated!",
+            description: `Demo analysis complete for ${userProfile.tickers.join(', ')}`,
+            variant: "default",
+          });
+        }, 1000);
+        return;
+      }
+
       // Send all user profile data to the backend
       const portfolioRequest = {
         email: authState.user.email,
@@ -47,6 +98,39 @@ export default function Portfolio() {
       );
       
       setRecommendation(response.data);
+      
+      // Generate ELI5 explanation
+      if (response.data) {
+        setEli5Loading(true);
+        try {
+          const contentToExplain = `
+Portfolio Allocation: ${response.data.portfolio_allocation.map(a => `${a.asset_class} (${a.percentage}%)`).join(', ')}
+Expected Return Range: ${response.data.expected_return_range[0]}% to ${response.data.expected_return_range[1]}%
+Risk Appetite: ${response.data.user_profile.risk_appetite}
+Time Horizon: ${response.data.user_profile.time_horizon_years} years
+Financial Goal: ${response.data.user_profile.goal}
+
+Key Terms:
+- Portfolio Allocation: How your money is divided across different types of investments
+- Asset Class: Different categories of investments (stocks, bonds, etc.)
+- Expected Return: How much money you might make over time
+- Risk Appetite: How comfortable you are with the possibility of losing money
+- Time Horizon: How long you plan to invest
+- Sentiment Score: How positive or negative the market feels about a stock
+- Market Position: How strong a company is compared to its competitors
+`;
+          const eli5Response = await advisorAPI.getELI5Explanation(
+            contentToExplain,
+            'Portfolio recommendation with allocation strategy, expected returns, and risk analysis'
+          );
+          setEli5Explanation(eli5Response.data.explanation);
+        } catch (error) {
+          console.error('Failed to generate ELI5 explanation:', error);
+        } finally {
+          setEli5Loading(false);
+        }
+      }
+      
       toast({
         title: "Portfolio recommendation generated!",
         description: `Analysis complete for ${userProfile.tickers.join(', ')}`,
@@ -67,11 +151,18 @@ export default function Portfolio() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Portfolio Advisor</h1>
-        <p className="text-muted-foreground">
-          Get personalized portfolio recommendations based on your profile and market analysis.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Portfolio Advisor</h1>
+          <p className="text-muted-foreground">
+            Get personalized portfolio recommendations based on your profile and market analysis.
+          </p>
+        </div>
+        {authState.user?.isDemo && (
+          <Badge variant="secondary">
+            Demo Mode
+          </Badge>
+        )}
       </div>
 
       {/* Input Form */}
@@ -346,6 +437,42 @@ export default function Portfolio() {
             <CardContent>
               <p className="text-sm leading-relaxed">{recommendation.rationale}</p>
             </CardContent>
+          </Card>
+
+          {/* ELI5 Section */}
+          <Card className="card-elegant border-primary/20">
+            <Collapsible open={eli5Open} onOpenChange={setEli5Open}>
+              <CardHeader>
+                <CollapsibleTrigger className="flex items-center justify-between w-full text-left">
+                  <div className="flex items-center space-x-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    <CardTitle>Explain Like I'm 5 (ELI5)</CardTitle>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${eli5Open ? 'transform rotate-180' : ''}`} />
+                </CollapsibleTrigger>
+                <CardDescription>
+                  Simple explanations of financial terms and concepts - no jargon, just plain English
+                </CardDescription>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent>
+                  {eli5Loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+                      <span className="text-muted-foreground">Generating simple explanation...</span>
+                    </div>
+                  ) : eli5Explanation ? (
+                    <div className="prose prose-sm max-w-none">
+                      <p className="text-sm leading-relaxed whitespace-pre-line">{eli5Explanation}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Click to generate a simple explanation of the financial terms and concepts in this recommendation.
+                    </p>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
 
           {/* Market Summary */}

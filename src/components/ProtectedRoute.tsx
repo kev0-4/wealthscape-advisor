@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, state } = useAuth();
+  const { isAuthenticated, state, needsOnboarding } = useAuth();
   const location = useLocation();
 
   if (state.loading) {
@@ -20,6 +20,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Check if onboarding is needed (but allow access to onboarding page)
+  if (needsOnboarding() && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;

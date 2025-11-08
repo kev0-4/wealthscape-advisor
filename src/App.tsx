@@ -10,6 +10,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Portfolio from "./pages/Portfolio";
 import Market from "./pages/Market";
@@ -26,6 +27,14 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route 
+              path="/onboarding" 
+              element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route 
               path="/*" 

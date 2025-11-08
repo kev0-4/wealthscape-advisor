@@ -12,6 +12,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   LayoutDashboard,
   Target,
@@ -95,9 +96,16 @@ export function AppSidebar() {
         {/* User Section */}
         <div className="mt-auto border-t border-sidebar-border p-4 space-y-2">
           {!isCollapsed && (
-            <div className="flex items-center space-x-2 text-sm text-sidebar-foreground">
-              <User className="h-4 w-4" />
-              <span className="truncate">{state.user?.email}</span>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-sm text-sidebar-foreground">
+                <User className="h-4 w-4" />
+                <span className="truncate">{state.user?.email}</span>
+              </div>
+              {state.user?.isDemo && (
+                <Badge variant="secondary" className="text-xs">
+                  Demo Mode
+                </Badge>
+              )}
             </div>
           )}
           <Button
